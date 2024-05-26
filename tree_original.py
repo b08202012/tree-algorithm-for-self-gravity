@@ -1,4 +1,5 @@
 import math
+import matplotlib.pyplot as plt
 
 class Body:
     def __init__(self, x, y, mass):
@@ -10,33 +11,52 @@ class Body:
         self.ax = 0
         self.ay = 0
 
-class QuadtreeNode:
-    def __init__(self, x_min, x_max, y_min, y_max):
-        self.x_min = x_min
-        self.x_max = x_max
-        self.y_min = y_min
-        self.y_max = y_max
-        self.body = None
-        self.mass = 0
-        self.center_of_mass_x = 0
-        self.center_of_mass_y = 0
-        self.children = [None, None, None, None]
+class rect:
+    def __init__(self, x, y, h, w):
+        self.x = x
+        self.y = y
+        self.h = h
+        self.w = w
 
-    def is_leaf(self):
-        return all(child is None for child in self.children)
+class QuadtreeNode:
+    def __init__(self, boundary, level):
+        self.max_obj = 4
+        self.children = []
+        self.area = []
+        self.level = level
+        self.boundary = boundary
+    
+    def check_boundary(self, body):
+        x_b, y_b = body.x, body.y
+        x, y, h, w = self.boundary.x, self.boundary.y, self.boundary.h, self.boundary.w
+        if self.level != 0:
+            if x_b < x or x_b > x+w or y_b < y or y_b > y+h:
+                return True
 
     def insert(self, body):
-        if self.is_leaf():
-            if self.body is None:
-                self.body = body
-            else:
-                self.subdivide()
-                self._insert_into_children(self.body)
-                self._insert_into_children(body)
-                self.body = None
-        else:
-            self._insert_into_children(body)
-        self._update_mass_distribution()
+        if self.check_boundary(body):
+            return False
+        if len(self.children) < self.max_obj:
+            self.children.append(body)
+            print(len(self.children))
+            return True
+        if len(self.area) <= 0:
+            self.subdivide()
+            
+        for area_ in self.area:
+            if area_.insert(body):
+                return True
+
+    def subdivide(self):
+        x = self.boundary.x
+        y = self.boundary.y
+        h = self.boundary.h
+        w = self.boundary.w
+
+        self.area.append(QuadtreeNode(rect(x+w/2, y, h/2, w/2), self.level+1))
+        self.area.append(QuadtreeNode(rect(x, y, h/2, w/2), self.level+1))
+        self.area.append(QuadtreeNode(rect(x, y+h/2, h/2, w/2), self.level+1))
+        self.area.append(QuadtreeNode(rect(x+w/2, y+h/2, h/2, w/2), self.level+1))
 
     def _insert_into_children(self, body):
         for i, (x_min, x_max, y_min, y_max) in enumerate(self._get_quadrants()):
@@ -74,6 +94,21 @@ class QuadtreeNode:
             if self.mass > 0:
                 self.center_of_mass_x /= self.mass
                 self.center_of_mass_y /= self.mass
+    
+    def plot(self, ax):
+        x = self.boundary.x
+        y = self.boundary.y
+        h = self.boundary.h
+        w = self.boundary.w
+        ax.plot([x, x], [y+h, y], color="black")
+        ax.plot([x, x+w], [y, y], color="black")
+        ax.plot([x+w, x+w], [y+h, y], color="black")
+        ax.plot([x, x+w], [y+h, y+h], color="black")
+        if len(self.area) != 0:
+            for area_ in self.area:
+                area_.plot(ax)
+        for body in self.children:
+            ax.plot([body.x],[body.y],"bo", ms=5)
 
 def compute_force(body, node, theta=0.5, G=6.67430e-11):
     if node.is_leaf():
@@ -98,12 +133,21 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
             for child in node.children:
                 if child:
                     compute_force(body, child, theta, G)
+    
 
-# Example usage:
-bodies = [Body(x, y, mass) for x, y, mass in [(0, 0, 1), (1, 0, 1), (0, 1, 1), (1, 1, 1)]]
-root = QuadtreeNode(-2, 2, -2, 2)
-for body in bodies:
-    root.insert(body)
-for body in bodies:
-    compute_force(body, root)
-    print(f"Body at ({body.x}, {body.y}) has acceleration ({body.ax}, {body.ay})")
+
+if __name__ == "__main__":
+    qt = QuadtreeNode(rect(-2,-2,4,4),0)
+    qt.insert(Body(-0.9,0.9,1))
+    qt.insert(Body(-1,-1,1))
+    qt.insert(Body(1,1,1))
+    qt.insert(Body(1,-1,1))
+    qt.insert(Body(-0.8,0.5,1))
+    qt.insert(Body(-0.5,0.8,1))
+    qt.insert(Body(-0.4,0.7,1))
+    qt.insert(Body(-1.5,0.5,1))
+    qt.insert(Body(-1.5,0.3,1))
+    fig, ax = plt.subplots()
+    qt.plot(ax)
+
+    plt.show()
