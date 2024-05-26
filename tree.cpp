@@ -1,7 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 const double G = 6.67430e-11; // Gravitational constant
 
 class Body {
@@ -134,6 +136,21 @@ void computeForce(Body* body, QuadtreeNode* node, double theta = 0.5) {
             }
         }
     }
+}
+
+std::vector<Body*> readParticlesFromFile(const std::string& filename) {
+    std::ifstream inFile(filename);
+    std::vector<Body*> bodies;
+    std::string line;
+    while (std::getline(inFile, line)) {
+        if (line.empty()) continue;
+        std::istringstream iss(line);
+        double mass, x, y, z, vx, vy, vz, type, ax, ay, az, time;
+        iss >> mass >> x >> y >> z >> vx >> vy >> vz >> type >> ax >> ay >> az >> time;
+        // Create Body instance with 2D properties
+        bodies.push_back(new Body(x, y, mass, vx, vy, ax, ay));
+    }
+    return bodies;
 }
 
 int main() {
