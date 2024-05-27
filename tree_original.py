@@ -20,8 +20,8 @@ class rect:
 
 class QuadtreeNode:
     def __init__(self, boundary, level):
-        self.max_obj = 4
-        self.children = []
+        self.max_obj = 1
+        self.body = None
         self.area = []
         self.level = level
         self.boundary = boundary
@@ -36,13 +36,18 @@ class QuadtreeNode:
     def insert(self, body):
         if self.check_boundary(body):
             return False
-        if len(self.children) < self.max_obj:
-            self.children.append(body)
-            print(len(self.children))
+        if self.body == None:
+            self.body = body
+            print(self.body)
             return True
         if len(self.area) <= 0:
             self.subdivide()
-            
+            print(len(self.area))
+            for area_ in self.area:
+                print(self.body)
+                if area_.insert(self.body):
+                    self.body = "empty"
+                    break
         for area_ in self.area:
             if area_.insert(body):
                 return True
@@ -107,8 +112,8 @@ class QuadtreeNode:
         if len(self.area) != 0:
             for area_ in self.area:
                 area_.plot(ax)
-        for body in self.children:
-            ax.plot([body.x],[body.y],"bo", ms=5)
+        if self.body != None and self.body != "empty":
+            ax.plot([self.body.x],[self.body.y],"bo", ms=5)
 
 def compute_force(body, node, theta=0.5, G=6.67430e-11):
     if node.is_leaf():
