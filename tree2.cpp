@@ -1,24 +1,19 @@
-#include <SFML/Graphics.hpp>
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
 
 const double G = 6.67430e-11; // Gravitational constant
-<<<<<<< baron1
 const double TIME_STEP = 0.01; // Time step for simulation
 const int NUM_STEPS = 1000; // Number of simulation steps
-=======
-const double TIME_STEP = 0.01; // Time step for the simulation
->>>>>>> main
 
 class Body {
 public:
     double x, y, mass, vx, vy, ax, ay;
 
-<<<<<<< baron1
     Body(double x, double y, double mass, double vx, double vy, double ax, double ay)
         : x(x), y(y), mass(mass), vx(vx), vy(vy), ax(ax), ay(ay) {}
 
@@ -33,28 +28,6 @@ public:
         ax = 0;
         ay = 0;
     }
-=======
-    Body(double x, double y, double mass) : x(x), y(y), mass(mass), vx(0), vy(0), ax(0), ay(0) {}
-
-    void update() {
-        // Update velocity
-        vx += ax * TIME_STEP;
-        vy += ay * TIME_STEP;
-        // Update position
-        x += vx * TIME_STEP;
-        y += vy * TIME_STEP;
-        // Reset acceleration
-        ax = 0;
-        ay = 0;
-    }
-
-    void draw(sf::RenderWindow& window) {
-        sf::CircleShape shape(2);
-        shape.setPosition(x, y);
-        shape.setFillColor(sf::Color::White);
-        window.draw(shape);
-    }
->>>>>>> main
 };
 
 class QuadtreeNode {
@@ -186,41 +159,35 @@ void computeForce(Body* body, QuadtreeNode* node, double theta = 0.5) {
     }
 }
 
-<<<<<<< baron1
 void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstream& outFile) {
     for (int step = 0; step < steps; ++step) {
-        // Create the root of the quadtree
-        double minCoord = -1000; // Adjust these bounds as necessary
-        double maxCoord = 1000;
-        QuadtreeNode* root = new QuadtreeNode(minCoord, maxCoord, minCoord, maxCoord);
+        // Calculate the bounds dynamically
+        double minCoordX = std::numeric_limits<double>::max();
+        double maxCoordX = std::numeric_limits<double>::min();
+        double minCoordY = std::numeric_limits<double>::max();
+        double maxCoordY = std::numeric_limits<double>::min();
 
-        // Insert all bodies into the quadtree
-=======
-int main() {
-    // Set up the window
-    sf::RenderWindow window(sf::VideoMode(800, 800), "Particle Simulation");
-
-    // Create bodies
-    std::vector<Body*> bodies = {
-        new Body(400, 400, 1e14), new Body(450, 400, 1e14), new Body(400, 450, 1e14), new Body(450, 450, 1e14)
-    };
-
-    // Main loop
-    while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
-                window.close();
+        for (const auto& body : bodies) {
+            if (body->x < minCoordX) minCoordX = body->x;
+            if (body->x > maxCoordX) maxCoordX = body->x;
+            if (body->y < minCoordY) minCoordY = body->y;
+            if (body->y > maxCoordY) maxCoordY = body->y;
         }
 
-        // Insert bodies into the quadtree
-        QuadtreeNode* root = new QuadtreeNode(0, 800, 0, 800);
->>>>>>> main
+        double margin = 0.1 * std::max(maxCoordX - minCoordX, maxCoordY - minCoordY);
+        minCoordX -= margin;
+        maxCoordX += margin;
+        minCoordY -= margin;
+        maxCoordY += margin;
+
+        // Create the root of the quadtree
+        QuadtreeNode* root = new QuadtreeNode(minCoordX, maxCoordX, minCoordY, maxCoordY);
+
+        // Insert all bodies into the quadtree
         for (auto body : bodies) {
             root->insert(body);
         }
 
-<<<<<<< baron1
         // Compute forces for each body
         for (auto body : bodies) {
             body->resetAcceleration();
@@ -234,8 +201,7 @@ int main() {
 
         // Write positions to file
         outFile << std::scientific << std::setprecision(16);
-        if (step = 1000) {
-            for (auto body : bodies) {
+        for (auto body : bodies) {
             outFile << std::setw(24) << body->mass
                     << std::setw(24) << body->x
                     << std::setw(24) << body->y
@@ -248,9 +214,7 @@ int main() {
                     << std::setw(24) << body->ay
                     << std::setw(24) << 0.0 // z acceleration (always 0 in 2D)
                     << std::setw(24) << (step * timeStep) << std::endl;
-            }
         }
-        
 
         delete root;
     }
@@ -258,6 +222,9 @@ int main() {
 
 std::vector<Body*> readParticlesFromFile(const std::string& filename) {
     std::ifstream inFile(filename);
+    if (!inFile) {
+        throw std::runtime_error("Unable to open file: " + filename);
+    }
     std::vector<Body*> bodies;
     std::string line;
     while (std::getline(inFile, line)) {
@@ -265,47 +232,34 @@ std::vector<Body*> readParticlesFromFile(const std::string& filename) {
         std::istringstream iss(line);
         double mass, x, y, z, vx, vy, vz, type, ax, ay, az, time;
         iss >> mass >> x >> y >> z >> vx >> vy >> vz >> type >> ax >> ay >> az >> time;
-        // Create Body instance with 2D properties
         bodies.push_back(new Body(x, y, mass, vx, vy, ax, ay));
-=======
-        // Compute forces and update bodies
-        for (auto body : bodies) {
-            computeForce(body, root);
-            body->update();
-        }
-
-        // Clear the window
-        window.clear();
-
-        // Draw bodies
-        for (auto body : bodies) {
-            body->draw(window);
-        }
-
-        // Display the contents of the window
-        window.display();
-
-        // Clean up the quadtree
-        delete root;
->>>>>>> main
     }
     return bodies;
 }
 
 int main() {
-    std::ofstream outFile("particles_2d_simulated.txt");
+    try {
+        std::ofstream outFile("output.txt");
+        if (!outFile) {
+            throw std::runtime_error("Unable to open output file");
+        }
 
-    // Read bodies from file
-    std::vector<Body*> bodies = readParticlesFromFile("IC_16.txt");
+        // Read bodies from file
+        std::vector<Body*> bodies = readParticlesFromFile("IC_16.txt");
 
-    // Simulate
-    simulate(bodies, TIME_STEP, NUM_STEPS, outFile);
+        // Simulate
+        simulate(bodies, TIME_STEP, NUM_STEPS, outFile);
 
-    // Clean up bodies
-    for (auto body : bodies) {
-        delete body;
+        // Cleanup
+        for (auto body : bodies) {
+            delete body;
+        }
+
+        outFile.close();
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     }
 
-    outFile.close();
     return 0;
 }

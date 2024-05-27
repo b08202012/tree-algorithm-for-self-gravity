@@ -1,4 +1,70 @@
 import math
+<<<<<<< baron1
+import numpy as np
+import matplotlib.pyplot as plt
+
+class Body:
+    def __init__(self, mass, x, y, vx, vy):
+        self.x = x
+        self.y = y
+        self.mass = mass
+        self.vx = vx
+        self.vy = vy
+        self.ax = 0
+        self.ay = 0
+
+class rect:
+    def __init__(self, x, y, h, w):
+        self.x = x
+        self.y = y
+        self.h = h
+        self.w = w
+
+class QuadtreeNode:
+    def __init__(self, boundary, level):
+        self.max_obj = 1
+        self.body = None
+        self.area = []
+        self.level = level
+        self.boundary = boundary
+    
+    def check_boundary(self, body):
+        x_b, y_b = body.x, body.y
+        x, y, h, w = self.boundary.x, self.boundary.y, self.boundary.h, self.boundary.w
+        if self.level != 0:
+            if (x_b < x or x_b > x+w or y_b < y or y_b > y+h):
+                return True
+
+    def insert(self, body):
+        if self.check_boundary(body):
+            return False
+        if self.body == None:
+            self.body = body
+            print(self.body)
+            return True
+        if len(self.area) <= 0:
+            self.subdivide()
+            print(len(self.area))
+            for area_ in self.area:
+                print(self.body)
+                if area_.insert(self.body):
+                    self.body = "empty"
+                    break
+        for area_ in self.area:
+            if area_.insert(body):
+                return True
+
+    def subdivide(self):
+        x = self.boundary.x
+        y = self.boundary.y
+        h = self.boundary.h
+        w = self.boundary.w
+
+        self.area.append(QuadtreeNode(rect(x+w/2, y, h/2, w/2), self.level+1))
+        self.area.append(QuadtreeNode(rect(x, y, h/2, w/2), self.level+1))
+        self.area.append(QuadtreeNode(rect(x, y+h/2, h/2, w/2), self.level+1))
+        self.area.append(QuadtreeNode(rect(x+w/2, y+h/2, h/2, w/2), self.level+1))
+=======
 
 class Body:
     def __init__(self, x, y, mass):
@@ -37,6 +103,7 @@ class QuadtreeNode:
         else:
             self._insert_into_children(body)
         self._update_mass_distribution()
+>>>>>>> main
 
     def _insert_into_children(self, body):
         for i, (x_min, x_max, y_min, y_max) in enumerate(self._get_quadrants()):
@@ -74,6 +141,24 @@ class QuadtreeNode:
             if self.mass > 0:
                 self.center_of_mass_x /= self.mass
                 self.center_of_mass_y /= self.mass
+<<<<<<< baron1
+    
+    def plot(self, ax):
+        x = self.boundary.x
+        y = self.boundary.y
+        h = self.boundary.h
+        w = self.boundary.w
+        ax.plot([x, x], [y+h, y], color="black")
+        ax.plot([x, x+w], [y, y], color="black")
+        ax.plot([x+w, x+w], [y+h, y], color="black")
+        ax.plot([x, x+w], [y+h, y+h], color="black")
+        if len(self.area) != 0:
+            for area_ in self.area:
+                area_.plot(ax)
+        if self.body != None and self.body != "empty":
+            ax.plot([self.body.x],[self.body.y],"bo", ms=5)
+=======
+>>>>>>> main
 
 def compute_force(body, node, theta=0.5, G=6.67430e-11):
     if node.is_leaf():
@@ -99,6 +184,21 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
                 if child:
                     compute_force(body, child, theta, G)
 
+<<<<<<< baron1
+
+    
+init_body = np.loadtxt('IC16.txt',comments='#')
+
+if __name__ == "__main__":
+    qt = QuadtreeNode(rect(0,0,3,3),0)
+    for particle_num in range(16):
+        qt.insert(Body(init_body[particle_num,0],init_body[particle_num,1],init_body[particle_num,2],init_body[particle_num,4],init_body[particle_num,5]))
+    
+    fig, ax = plt.subplots()
+    qt.plot(ax)
+
+    plt.show()
+=======
 # Example usage:
 bodies = [Body(x, y, mass) for x, y, mass in [(0, 0, 1), (1, 0, 1), (0, 1, 1), (1, 1, 1)]]
 root = QuadtreeNode(-2, 2, -2, 2)
@@ -107,3 +207,4 @@ for body in bodies:
 for body in bodies:
     compute_force(body, root)
     print(f"Body at ({body.x}, {body.y}) has acceleration ({body.ax}, {body.ay})")
+>>>>>>> main
