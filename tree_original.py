@@ -141,8 +141,7 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
             body.ay += force * dy / distance
         else:
             for area_ in node.area:
-                if area_:
-                    compute_force(body, area_, theta, G)
+                compute_force(body, area_, theta, G)
     
 
 
@@ -159,6 +158,7 @@ if __name__ == "__main__":
     qt.insert(Body(-1.5,0.3,1))
     body_list = [Body(-0.9,0.9,1),Body(-1,-1,1),Body(1,1,1),Body(1,-1,1),Body(-0.8,0.5,1),Body(-0.5,0.8,1),
                  Body(-0.4,0.7,1),Body(-1.5,0.5,1),Body(-1.5,0.3,1)]
+    d=[]
     qt._update_mass_distribution()
     for body in body_list:
         compute_force(body, qt)
