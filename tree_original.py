@@ -140,8 +140,20 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
                 if child:
                     compute_force(body, child, theta, G)
 
+def update_orbit( body, dt ):
+    body.x
+    # Drift
+    body.x += body.vx * dt/2
+    body.y += body.vy * dt/2
+    # Kick
+    body.ax = compute_force(body)/body.mass # compute_force function is still incorrrect
+    body.ay = compute_force(body)/body.mass
+    body.vx += body.ax * dt
+    body.vy += body.ay * dt
+    # Drift
+    body.x += body.vx * dt/2
+    body.y += body.vy * dt/2 
 
-    
 init_body = np.loadtxt('IC16.txt',comments='#')
 
 if __name__ == "__main__":
