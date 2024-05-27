@@ -1,13 +1,14 @@
 import math
+import numpy as np
 import matplotlib.pyplot as plt
 
 class Body:
-    def __init__(self, x, y, vx, vy, ax, ay, mass):
+    def __init__(self, mass, x, y, vx, vy):
         self.x = x
         self.y = y
         self.mass = mass
-        self.vx = 0
-        self.vy = 0
+        self.vx = vx
+        self.vy = vy
         self.ax = 0
         self.ay = 0
 
@@ -30,7 +31,7 @@ class QuadtreeNode:
         x_b, y_b = body.x, body.y
         x, y, h, w = self.boundary.x, self.boundary.y, self.boundary.h, self.boundary.w
         if self.level != 0:
-            if x_b < x or x_b > x+w or y_b < y or y_b > y+h:
+            if (x_b < x or x_b > x+w or y_b < y or y_b > y+h):
                 return True
 
     def insert(self, body):
@@ -138,20 +139,16 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
             for child in node.children:
                 if child:
                     compute_force(body, child, theta, G)
-    
 
+
+    
+init_body = np.loadtxt('IC16.txt',comments='#')
 
 if __name__ == "__main__":
-    qt = QuadtreeNode(rect(-2,-2,4,4),0)
-    qt.insert(Body(-0.9,0.9,1))
-    qt.insert(Body(-1,-1,1))
-    qt.insert(Body(1,1,1))
-    qt.insert(Body(1,-1,1))
-    qt.insert(Body(-0.8,0.5,1))
-    qt.insert(Body(-0.5,0.8,1))
-    qt.insert(Body(-0.4,0.7,1))
-    qt.insert(Body(-1.5,0.5,1))
-    qt.insert(Body(-1.5,0.3,1))
+    qt = QuadtreeNode(rect(0,0,3,3),0)
+    for particle_num in range(16):
+        qt.insert(Body(init_body[particle_num,0],init_body[particle_num,1],init_body[particle_num,2],init_body[particle_num,4],init_body[particle_num,5]))
+    
     fig, ax = plt.subplots()
     qt.plot(ax)
 
