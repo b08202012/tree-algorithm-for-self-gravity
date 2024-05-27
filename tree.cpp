@@ -1,3 +1,4 @@
+#include <SFML/Graphics.hpp>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -6,13 +7,18 @@
 #include <sstream>
 
 const double G = 6.67430e-11; // Gravitational constant
+<<<<<<< baron1
 const double TIME_STEP = 0.01; // Time step for simulation
 const int NUM_STEPS = 1000; // Number of simulation steps
+=======
+const double TIME_STEP = 0.01; // Time step for the simulation
+>>>>>>> main
 
 class Body {
 public:
     double x, y, mass, vx, vy, ax, ay;
 
+<<<<<<< baron1
     Body(double x, double y, double mass, double vx, double vy, double ax, double ay)
         : x(x), y(y), mass(mass), vx(vx), vy(vy), ax(ax), ay(ay) {}
 
@@ -27,6 +33,28 @@ public:
         ax = 0;
         ay = 0;
     }
+=======
+    Body(double x, double y, double mass) : x(x), y(y), mass(mass), vx(0), vy(0), ax(0), ay(0) {}
+
+    void update() {
+        // Update velocity
+        vx += ax * TIME_STEP;
+        vy += ay * TIME_STEP;
+        // Update position
+        x += vx * TIME_STEP;
+        y += vy * TIME_STEP;
+        // Reset acceleration
+        ax = 0;
+        ay = 0;
+    }
+
+    void draw(sf::RenderWindow& window) {
+        sf::CircleShape shape(2);
+        shape.setPosition(x, y);
+        shape.setFillColor(sf::Color::White);
+        window.draw(shape);
+    }
+>>>>>>> main
 };
 
 class QuadtreeNode {
@@ -158,6 +186,7 @@ void computeForce(Body* body, QuadtreeNode* node, double theta = 0.5) {
     }
 }
 
+<<<<<<< baron1
 void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstream& outFile) {
     for (int step = 0; step < steps; ++step) {
         // Create the root of the quadtree
@@ -166,10 +195,32 @@ void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstr
         QuadtreeNode* root = new QuadtreeNode(minCoord, maxCoord, minCoord, maxCoord);
 
         // Insert all bodies into the quadtree
+=======
+int main() {
+    // Set up the window
+    sf::RenderWindow window(sf::VideoMode(800, 800), "Particle Simulation");
+
+    // Create bodies
+    std::vector<Body*> bodies = {
+        new Body(400, 400, 1e14), new Body(450, 400, 1e14), new Body(400, 450, 1e14), new Body(450, 450, 1e14)
+    };
+
+    // Main loop
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+        }
+
+        // Insert bodies into the quadtree
+        QuadtreeNode* root = new QuadtreeNode(0, 800, 0, 800);
+>>>>>>> main
         for (auto body : bodies) {
             root->insert(body);
         }
 
+<<<<<<< baron1
         // Compute forces for each body
         for (auto body : bodies) {
             body->resetAcceleration();
@@ -216,6 +267,27 @@ std::vector<Body*> readParticlesFromFile(const std::string& filename) {
         iss >> mass >> x >> y >> z >> vx >> vy >> vz >> type >> ax >> ay >> az >> time;
         // Create Body instance with 2D properties
         bodies.push_back(new Body(x, y, mass, vx, vy, ax, ay));
+=======
+        // Compute forces and update bodies
+        for (auto body : bodies) {
+            computeForce(body, root);
+            body->update();
+        }
+
+        // Clear the window
+        window.clear();
+
+        // Draw bodies
+        for (auto body : bodies) {
+            body->draw(window);
+        }
+
+        // Display the contents of the window
+        window.display();
+
+        // Clean up the quadtree
+        delete root;
+>>>>>>> main
     }
     return bodies;
 }
@@ -229,7 +301,7 @@ int main() {
     // Simulate
     simulate(bodies, TIME_STEP, NUM_STEPS, outFile);
 
-    // Cleanup
+    // Clean up bodies
     for (auto body : bodies) {
         delete body;
     }

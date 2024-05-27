@@ -1,4 +1,5 @@
 import math
+<<<<<<< baron1
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -63,6 +64,46 @@ class QuadtreeNode:
         self.area.append(QuadtreeNode(rect(x, y, h/2, w/2), self.level+1))
         self.area.append(QuadtreeNode(rect(x, y+h/2, h/2, w/2), self.level+1))
         self.area.append(QuadtreeNode(rect(x+w/2, y+h/2, h/2, w/2), self.level+1))
+=======
+
+class Body:
+    def __init__(self, x, y, mass):
+        self.x = x
+        self.y = y
+        self.mass = mass
+        self.vx = 0
+        self.vy = 0
+        self.ax = 0
+        self.ay = 0
+
+class QuadtreeNode:
+    def __init__(self, x_min, x_max, y_min, y_max):
+        self.x_min = x_min
+        self.x_max = x_max
+        self.y_min = y_min
+        self.y_max = y_max
+        self.body = None
+        self.mass = 0
+        self.center_of_mass_x = 0
+        self.center_of_mass_y = 0
+        self.children = [None, None, None, None]
+
+    def is_leaf(self):
+        return all(child is None for child in self.children)
+
+    def insert(self, body):
+        if self.is_leaf():
+            if self.body is None:
+                self.body = body
+            else:
+                self.subdivide()
+                self._insert_into_children(self.body)
+                self._insert_into_children(body)
+                self.body = None
+        else:
+            self._insert_into_children(body)
+        self._update_mass_distribution()
+>>>>>>> main
 
     def _insert_into_children(self, body):
         for i, (x_min, x_max, y_min, y_max) in enumerate(self._get_quadrants()):
@@ -100,6 +141,7 @@ class QuadtreeNode:
             if self.mass > 0:
                 self.center_of_mass_x /= self.mass
                 self.center_of_mass_y /= self.mass
+<<<<<<< baron1
     
     def plot(self, ax):
         x = self.boundary.x
@@ -115,6 +157,8 @@ class QuadtreeNode:
                 area_.plot(ax)
         if self.body != None and self.body != "empty":
             ax.plot([self.body.x],[self.body.y],"bo", ms=5)
+=======
+>>>>>>> main
 
 def compute_force(body, node, theta=0.5, G=6.67430e-11):
     if node.is_leaf():
@@ -140,6 +184,7 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
                 if child:
                     compute_force(body, child, theta, G)
 
+<<<<<<< baron1
 
     
 init_body = np.loadtxt('IC16.txt',comments='#')
@@ -153,3 +198,13 @@ if __name__ == "__main__":
     qt.plot(ax)
 
     plt.show()
+=======
+# Example usage:
+bodies = [Body(x, y, mass) for x, y, mass in [(0, 0, 1), (1, 0, 1), (0, 1, 1), (1, 1, 1)]]
+root = QuadtreeNode(-2, 2, -2, 2)
+for body in bodies:
+    root.insert(body)
+for body in bodies:
+    compute_force(body, root)
+    print(f"Body at ({body.x}, {body.y}) has acceleration ({body.ax}, {body.ay})")
+>>>>>>> main
