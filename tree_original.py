@@ -1,4 +1,9 @@
 import math
+<<<<<<< Updated upstream
+=======
+import matplotlib.pyplot as plt
+import cython
+>>>>>>> Stashed changes
 
 class Body:
     def __init__(self, x, y, mass):
@@ -98,6 +103,56 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
             for child in node.children:
                 if child:
                     compute_force(body, child, theta, G)
+<<<<<<< Updated upstream
+=======
+
+def move(body, node, theta=0.5, G=6.67430e-11):  
+#####   update orbit (drift-kick-drift (DKD))  #####
+#     (a) drift: update position by 0.5*dt
+    body.x = body.x + body.vx*0.5*dt
+    body.y = body.y + body.vy*0.5*dt
+
+#     (b) kick: calculate a(t+0.5*dt) and use that to update velocity by dt
+    r     = ( x*x + y*y )**0.5
+    a_abs = G*M/(r*r)
+    ax    = -a_abs*x/r
+    ay    = -a_abs*y/r
+    vx    = vx + ax*dt
+    vy    = vy + ay*dt
+
+#     (c) drift: use v(t+dt) to update position by another 0.5*dt
+    body.x = body.x + body.vx*0.5*dt
+    body.y = body.y + body.vy*0.5*dt
+
+#     update time
+    #t = t + dt
+    #if ( t >= end_time ):   
+     #   break
+
+    # if node.is_leaf():
+    #     if node.body is not None and node.body != body:
+    #         dx = node.body.x - body.x
+    #         dy = node.body.y - body.y
+    #         distance = math.sqrt(dx**2 + dy**2)
+    #         if distance > 0:
+    #             force = G * body.mass * node.body.mass / (distance**2)
+    #             body.ax += force * dx / distance
+    #             body.ay += force * dy / distance
+    # else:
+    #     dx = node.center_of_mass_x - body.x
+    #     dy = node.center_of_mass_y - body.y
+    #     distance = math.sqrt(dx**2 + dy**2)
+    #     size = node.x_max - node.x_min
+    #     if size / distance < theta:
+    #         force = G * body.mass * node.mass / (distance**2)
+    #         body.ax += force * dx / distance
+    #         body.ay += force * dy / distance
+    #     else:
+    #         for child in node.children:
+    #             if child:
+    #                 compute_force(body, child, theta, G)
+    
+>>>>>>> Stashed changes
 
 # Example usage:
 bodies = [Body(x, y, mass) for x, y, mass in [(0, 0, 1), (1, 0, 1), (0, 1, 1), (1, 1, 1)]]
