@@ -1,16 +1,32 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cmath>
-#include <fstream>
 #include <iomanip>
 #include <sstream>
+
 const double G = 6.67430e-11; // Gravitational constant
+const double TIME_STEP = 0.01; // Time step for simulation
+const int NUM_STEPS = 1000; // Number of simulation steps
 
 class Body {
 public:
     double x, y, mass, vx, vy, ax, ay;
 
-    Body(double x, double y, double mass) : x(x), y(y), mass(mass), vx(0), vy(0), ax(0), ay(0) {}
+    Body(double x, double y, double mass, double vx, double vy, double ax, double ay)
+        : x(x), y(y), mass(mass), vx(vx), vy(vy), ax(ax), ay(ay) {}
+
+    void updatePosition(double dt) {
+        vx += ax * dt;
+        vy += ay * dt;
+        x += vx * dt;
+        y += vy * dt;
+    }
+
+    void resetAcceleration() {
+        ax = 0;
+        ay = 0;
+    }
 };
 
 class QuadtreeNode {
@@ -47,6 +63,10 @@ public:
     }
 
     void insert(Body* body) {
+        if (!contains(body)) {
+            return;
+        }
+
         if (isLeaf()) {
             if (this->body == nullptr) {
                 this->body = body;
@@ -138,6 +158,53 @@ void computeForce(Body* body, QuadtreeNode* node, double theta = 0.5) {
     }
 }
 
+void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstream& outFile) {
+    for (int step = 0; step < steps; ++step) {
+        // Create the root of the quadtree
+        double minCoord = -1000; // Adjust these bounds as necessary
+        double maxCoord = 1000;
+        QuadtreeNode* root = new QuadtreeNode(minCoord, maxCoord, minCoord, maxCoord);
+
+        // Insert all bodies into the quadtree
+        for (auto body : bodies) {
+            root->insert(body);
+        }
+
+        // Compute forces for each body
+        for (auto body : bodies) {
+            body->resetAcceleration();
+            computeForce(body, root);
+        }
+
+        // Update positions and velocities
+        for (auto body : bodies) {
+            body->updatePosition(timeStep);
+        }
+
+        // Write positions to file
+        outFile << std::scientific << std::setprecision(16);
+        if (step = 1000) {
+            for (auto body : bodies) {
+            outFile << std::setw(24) << body->mass
+                    << std::setw(24) << body->x
+                    << std::setw(24) << body->y
+                    << std::setw(24) << 0.0 // z position (always 0 in 2D)
+                    << std::setw(24) << body->vx
+                    << std::setw(24) << body->vy
+                    << std::setw(24) << 0.0 // z velocity (always 0 in 2D)
+                    << std::setw(24) << 1.0 // Particle type (constant)
+                    << std::setw(24) << body->ax
+                    << std::setw(24) << body->ay
+                    << std::setw(24) << 0.0 // z acceleration (always 0 in 2D)
+                    << std::setw(24) << (step * timeStep) << std::endl;
+            }
+        }
+        
+
+        delete root;
+    }
+}
+
 std::vector<Body*> readParticlesFromFile(const std::string& filename) {
     std::ifstream inFile(filename);
     std::vector<Body*> bodies;
@@ -154,22 +221,19 @@ std::vector<Body*> readParticlesFromFile(const std::string& filename) {
 }
 
 int main() {
-    std::vector<Body*> bodies = {new Body(0, 0, 1), new Body(1, 0, 1), new Body(0, 1, 1), new Body(1, 1, 1)};
-    QuadtreeNode* root = new QuadtreeNode(-2, 2, -2, 2);
-    for (auto body : bodies) {
-        root->insert(body);
-    }
-    for (auto body : bodies) {
-        computeForce(body, root);
-        std::cout << "Body at (" << body->x << ", " << body->y << ") has acceleration (" 
-                  << body->ax << ", " << body->ay << ")\n";
-    }
+    std::ofstream outFile("particles_2d_simulated.txt");
+
+    // Read bodies from file
+    std::vector<Body*> bodies = readParticlesFromFile("IC_16.txt");
+
+    // Simulate
+    simulate(bodies, TIME_STEP, NUM_STEPS, outFile);
 
     // Cleanup
     for (auto body : bodies) {
         delete body;
     }
-    delete root;
 
+    outFile.close();
     return 0;
 }
