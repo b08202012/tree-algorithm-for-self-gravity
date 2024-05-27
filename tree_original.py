@@ -80,7 +80,6 @@ class QuadtreeNode:
 
     def calculate_center_of_mass(self, mass = 0, center_of_mass_x = 0, center_of_mass_y = 0):
         if self.body == "empty":
-            print(2)
             for area_ in self.area:
                 mass, center_of_mass_x, center_of_mass_y = area_.calculate_center_of_mass(mass, center_of_mass_x, center_of_mass_y)
                 
@@ -88,7 +87,6 @@ class QuadtreeNode:
             mass += self.body.mass
             center_of_mass_x += self.body.mass*self.body.x
             center_of_mass_y += self.body.mass*self.body.y
-            print(mass)
 
 
         return mass, center_of_mass_x, center_of_mass_y
@@ -98,7 +96,6 @@ class QuadtreeNode:
         self.center_of_mass_x = None
         self.center_of_mass_y = None
         if self.body != None:
-            print(self.body)
             self.mass, self.center_of_mass_x, self.center_of_mass_y = self.calculate_center_of_mass()
             if self.mass != 0:
                 self.center_of_mass_x /= self.mass
@@ -124,7 +121,7 @@ class QuadtreeNode:
             ax.plot([self.body.x],[self.body.y],"bo", ms=5)
 
 def compute_force(body, node, theta=0.5, G=6.67430e-11):
-    if node.is_leaf():
+    if node.body != "empty":
         if node.body is not None and node.body != body:
             dx = node.body.x - body.x
             dy = node.body.y - body.y
@@ -137,15 +134,15 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
         dx = node.center_of_mass_x - body.x
         dy = node.center_of_mass_y - body.y
         distance = math.sqrt(dx**2 + dy**2)
-        size = node.x_max - node.x_min
+        size = node.boundary.w
         if size / distance < theta:
             force = G * body.mass * node.mass / (distance**2)
             body.ax += force * dx / distance
             body.ay += force * dy / distance
         else:
-            for child in node.children:
-                if child:
-                    compute_force(body, child, theta, G)
+            for area_ in node.area:
+                if area_:
+                    compute_force(body, area_, theta, G)
     
 
 
@@ -160,7 +157,13 @@ if __name__ == "__main__":
     qt.insert(Body(-0.4,0.7,1))
     qt.insert(Body(-1.5,0.5,1))
     qt.insert(Body(-1.5,0.3,1))
+    body_list = [Body(-0.9,0.9,1),Body(-1,-1,1),Body(1,1,1),Body(1,-1,1),Body(-0.8,0.5,1),Body(-0.5,0.8,1),
+                 Body(-0.4,0.7,1),Body(-1.5,0.5,1),Body(-1.5,0.3,1)]
     qt._update_mass_distribution()
+    for body in body_list:
+        compute_force(body, qt)
+    for body in body_list:
+        print(body.ax)
     fig, ax = plt.subplots()
     qt.plot(ax)
 
