@@ -2,7 +2,7 @@ import math
 import matplotlib.pyplot as plt
 
 class Body:
-    def __init__(self, x, y, mass):
+    def __init__(self, x, y, vx, vy, ax, ay, mass):
         self.x = x
         self.y = y
         self.mass = mass
