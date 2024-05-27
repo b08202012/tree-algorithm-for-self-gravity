@@ -38,13 +38,10 @@ class QuadtreeNode:
             return False
         if self.body == None:
             self.body = body
-            print(self.body)
             return True
         if len(self.area) <= 0:
             self.subdivide()
-            print(len(self.area))
             for area_ in self.area:
-                print(self.body)
                 if area_.insert(self.body):
                     self.body = "empty"
                     break
@@ -81,24 +78,33 @@ class QuadtreeNode:
             (x_mid, self.x_max, y_mid, self.y_max),
         ]
 
+    def calculate_center_of_mass(self, mass = 0, center_of_mass_x = 0, center_of_mass_y = 0):
+        if self.body == "empty":
+            print(2)
+            for area_ in self.area:
+                mass, center_of_mass_x, center_of_mass_y = area_.calculate_center_of_mass(mass, center_of_mass_x, center_of_mass_y)
+                
+        elif self.body != None:
+            mass += self.body.mass
+            center_of_mass_x += self.body.mass*self.body.x
+            center_of_mass_y += self.body.mass*self.body.y
+            print(mass)
+
+
+        return mass, center_of_mass_x, center_of_mass_y
+
     def _update_mass_distribution(self):
         self.mass = 0
-        self.center_of_mass_x = 0
-        self.center_of_mass_y = 0
-        if self.is_leaf():
-            if self.body:
-                self.mass = self.body.mass
-                self.center_of_mass_x = self.body.x
-                self.center_of_mass_y = self.body.y
-        else:
-            for child in self.children:
-                if child:
-                    self.mass += child.mass
-                    self.center_of_mass_x += child.mass * child.center_of_mass_x
-                    self.center_of_mass_y += child.mass * child.center_of_mass_y
-            if self.mass > 0:
+        self.center_of_mass_x = None
+        self.center_of_mass_y = None
+        if self.body != None:
+            print(self.body)
+            self.mass, self.center_of_mass_x, self.center_of_mass_y = self.calculate_center_of_mass()
+            if self.mass != 0:
                 self.center_of_mass_x /= self.mass
                 self.center_of_mass_y /= self.mass
+            for area_ in self.area:
+                area_._update_mass_distribution()
     
     def plot(self, ax):
         x = self.boundary.x
@@ -109,6 +115,8 @@ class QuadtreeNode:
         ax.plot([x, x+w], [y, y], color="black")
         ax.plot([x+w, x+w], [y+h, y], color="black")
         ax.plot([x, x+w], [y+h, y+h], color="black")
+        if self.center_of_mass_x != None:
+            ax.plot([self.center_of_mass_x],[self.center_of_mass_y], "gx")
         if len(self.area) != 0:
             for area_ in self.area:
                 area_.plot(ax)
@@ -152,6 +160,7 @@ if __name__ == "__main__":
     qt.insert(Body(-0.4,0.7,1))
     qt.insert(Body(-1.5,0.5,1))
     qt.insert(Body(-1.5,0.3,1))
+    qt._update_mass_distribution()
     fig, ax = plt.subplots()
     qt.plot(ax)
 
