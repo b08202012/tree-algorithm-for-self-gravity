@@ -162,10 +162,10 @@ void computeForce(Body* body, QuadtreeNode* node, double theta = 0.5) {
 void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstream& outFile) {
     for (int step = 0; step < steps; ++step) {
         // Calculate the bounds dynamically
-        double minCoordX = std::numeric_limits<double>::max();
-        double maxCoordX = std::numeric_limits<double>::min();
-        double minCoordY = std::numeric_limits<double>::max();
-        double maxCoordY = std::numeric_limits<double>::min();
+        double minCoordX = -1e100;
+        double maxCoordX = 1e100;
+        double minCoordY = -1e100;
+        double maxCoordY = 1e100;
 
         for (const auto& body : bodies) {
             if (body->x < minCoordX) minCoordX = body->x;
