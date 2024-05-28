@@ -1,13 +1,16 @@
 import math
 import matplotlib.pyplot as plt
+t = 0.0
+dt = 1e-1
+end_time = 1.0
 
 class Body:
     def __init__(self, x, y, mass):
         self.x = x
         self.y = y
         self.mass = mass
-        self.vx = 0
-        self.vy = 0
+        self.vx = 1
+        self.vy = 1
         self.ax = 0
         self.ay = 0
 
@@ -142,28 +145,40 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
         else:
             for area_ in node.area:
                 compute_force(body, area_, theta, G)
+def update(body, node):
+    ##### update orbit (DKD) ######
+    # drift
+    body.x = body.x + body.vx*0.5*dt
+    body.y = body.y + body.vy*0.5*dt
+
+    # kick
+    compute_force(body, node)
+    body.vx = body.vx + body.ax*dt
+    body.vy = body.vy + body.ay*dt
+
+    # drift
+    body.x = body.x + body.vx*0.5*dt
+    body.y = body.y + body.vy*0.5*dt
+    return body
+
+
     
 
 
 if __name__ == "__main__":
-    qt = QuadtreeNode(rect(-2,-2,4,4),0)
-    qt.insert(Body(-0.9,0.9,1))
-    qt.insert(Body(-1,-1,1))
-    qt.insert(Body(1,1,1))
-    qt.insert(Body(1,-1,1))
-    qt.insert(Body(-0.8,0.5,1))
-    qt.insert(Body(-0.5,0.8,1))
-    qt.insert(Body(-0.4,0.7,1))
-    qt.insert(Body(-1.5,0.5,1))
-    qt.insert(Body(-1.5,0.3,1))
     body_list = [Body(-0.9,0.9,1),Body(-1,-1,1),Body(1,1,1),Body(1,-1,1),Body(-0.8,0.5,1),Body(-0.5,0.8,1),
                  Body(-0.4,0.7,1),Body(-1.5,0.5,1),Body(-1.5,0.3,1)]
-    qt._update_mass_distribution()
-    for body in body_list:
-        compute_force(body, qt)
-    for body in body_list:
-        print(body.ax)
-    fig, ax = plt.subplots()
-    qt.plot(ax)
+    while t <= end_time:
+        qt = QuadtreeNode(rect(-2,-2,4,4),0)
+        for body in body_list:
+            qt.insert(body)
+        qt._update_mass_distribution()
+        for i in range(len(body_list)):
+            body_list[i] = update(body_list[i], qt)
+        print(body_list[1].x)
+        fig, ax = plt.subplots()
+        qt.plot(ax)
+
+        t = t + dt
 
     plt.show()
