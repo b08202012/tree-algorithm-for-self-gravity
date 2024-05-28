@@ -1,0 +1,353 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#define MAX_OBJ 1
+#define G 1.0
+#define THETA 0.5
+#define DT 0.1
+
+typedef struct
+{
+    double x, y, mass;
+    double vx, vy;
+    double ax, ay;
+} Body;
+
+typedef struct
+{
+    double x, y, h, w;
+} Rect;
+
+typedef struct QuadtreeNode
+{
+    int max_obj;
+    Body *body;
+    struct QuadtreeNode *children[4];
+    Rect boundary;
+    double mass;
+    double center_of_mass_x;
+    double center_of_mass_y;
+} QuadtreeNode;
+
+// Function prototypes
+QuadtreeNode *create_node(Rect boundary);
+int check_boundary(QuadtreeNode *node, Body *body);
+int insert_body(QuadtreeNode *node, Body *body);
+void subdivide(QuadtreeNode *node);
+void calculate_center_of_mass(QuadtreeNode *node);
+void update_mass_distribution(QuadtreeNode *node);
+void compute_force(Body *body, QuadtreeNode *node);
+void update_body(Body *body, QuadtreeNode *node);
+void free_tree(QuadtreeNode *node);
+
+int main()
+{
+    double t = 0.0;
+    double end_time = 1.0;
+    int nframe = (int)(end_time / DT);
+
+    Body bodies[] = {
+        {-0.9, 0.9, 1, 1, 0.5, 0, 0},
+        {-1.0, -1.0, 1, 1, 0.5, 0, 0},
+        {1.0, 1.0, 1, 1, 0.5, 0, 0},
+        {1.0, -1.0, 1, 1, 0.5, 0, 0},
+        {-0.8, 0.5, 1, 1, 0.5, 0, 0},
+        {-0.5, 0.8, 1, 1, 0.5, 0, 0},
+        {-0.4, 0.7, 1, 1, 0.5, 0, 0},
+        {-1.5, 0.5, 1, 1, 0.5, 0, 0},
+        {-1.5, 0.3, 1, 1, 0.5, 0, 0}};
+    int num_bodies = sizeof(bodies) / sizeof(bodies[0]);
+
+    Rect boundary = {-10, -10, 20, 20};
+    QuadtreeNode *qt = create_node(boundary);
+
+    for (int frame = 0; frame < nframe; frame++)
+    {
+        for (int i = 0; i < num_bodies; i++)
+        {
+            insert_body(qt, &bodies[i]);
+        }
+        update_mass_distribution(qt);
+
+        for (int i = 0; i < num_bodies; i++)
+        {
+            update_body(&bodies[i], qt);
+        }
+
+        // Visualization and debug output can be added here.
+        // plot_tree(qt);
+
+        free_tree(qt);
+        qt = create_node(boundary);
+    }
+
+    free_tree(qt);
+    return 0;
+}
+
+QuadtreeNode *create_node(Rect boundary)
+{
+    QuadtreeNode *node = (QuadtreeNode *)malloc(sizeof(QuadtreeNode));
+    node->body = NULL;
+    node->boundary = boundary;
+    node->mass = 0;
+    node->center_of_mass_x = 0;
+    node->center_of_mass_y = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        node->children[i] = NULL;
+    }
+    return node;
+}
+
+int check_boundary(QuadtreeNode *node, Body *body)
+{
+    double x = node->boundary.x;
+    double y = node->boundary.y;
+    double h = node->boundary.h;
+    double w = node->boundary.w;
+    return (body->x < x || body->x > x + w || body->y < y || body->y > y + h);
+}
+
+int insert_body(QuadtreeNode *node, Body *body)
+{
+    if (check_boundary(node, body))
+    {
+        return 0;
+    }
+
+    if (node->body == NULL)
+    {
+        node->body = body;
+        return 1;
+    }
+
+    if (node->children[0] == NULL)
+    {
+        subdivide(node);
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (insert_body(node->children[i], node->body))
+        {
+            node->body = NULL;
+            break;
+        }
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (insert_body(node->children[i], body))
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+void subdivide(QuadtreeNode *node)
+{
+    double x = node->boundary.x;
+    double y = node->boundary.y;
+    double h = node->boundary.h;
+    double w = node->boundary.w;
+
+    node->children[0] = create_node((Rect){x + w / 2, y, h / 2, w / 2});
+    node->children[1] = create_node((Rect){x, y, h / 2, w / 2});
+    node->children[2] = create_node((Rect){x, y + h / 2, h / 2, w / 2});
+    node->children[3] = create_node((Rect){x + w / 2, y + h / 2, h / 2, w / 2});
+}
+
+void calculate_center_of_mass(QuadtreeNode *node)
+{
+    node->mass = 0;
+    node->center_of_mass_x = 0;
+    node->center_of_mass_y = 0;
+
+    if (node->body != NULL)
+    {
+        node->mass += node->body->mass;
+        node->center_of_mass_x += node->body->mass * node->body->x;
+        node->center_of_mass_y += node->body->mass * node->body->y;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (node->children[i] != NULL)
+        {
+            calculate_center_of_mass(node->children[i]);
+            node->mass += node->children[i]->mass;
+            node->center_of_mass_x += node->children[i]->center_of_mass_x;
+            node->center_of_mass_y += node->children[i]->center_of_mass_y;
+        }
+    }
+
+    if (node->mass != 0)
+    {
+        node->center_of_mass_x /= node->mass;
+        node->center_of_mass_y /= node->mass;
+    }
+}
+
+void update_mass_distribution(QuadtreeNode *node)
+{
+    calculate_center_of_mass(node);
+    for (int i = 0; i < 4; i++)
+    {
+        if (node->children[i] != NULL)
+        {
+            update_mass_distribution(node->children[i]);
+        }
+    }
+}
+
+void compute_force(Body *body, QuadtreeNode *node)
+{
+    if (node->body != NULL && node->body != body)
+    {
+        double dx = node->body->x - body->x;
+        double dy = node->body->y - body->y;
+        double distance = sqrt(dx * dx + dy * dy);
+        if (distance > 0)
+        {
+            double force = G * body->mass * node->body->mass / (distance * distance);
+            body->ax += force * dx / (distance * body->mass);
+            body->ay += force * dy / (distance * body->mass);
+        }
+    }
+    else if (node->body == NULL)
+    {
+        double dx = node->center_of_mass_x - body->x;
+        double dy = node->center_of_mass_y - body->y;
+        double distance = sqrt(dx * dx + dy * dy);
+        double size = node->boundary.w;
+        if (size / distance < THETA)
+        {
+            double force = G * body->mass * node->mass / (distance * distance);
+            body->ax += force * dx / (distance * body->mass);
+            body->ay += force * dy / (distance * body->mass);
+        }
+        else
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                if (node->children[i] != NULL)
+                {
+                    compute_force(body, node->children[i]);
+                }
+            }
+        }
+    }
+}
+
+// The function to update the position and velocity of the body using DKD method
+void update_per_body(Body *body, QuadtreeNode *node, double dt)
+{
+    // Drift
+    body->x += body->vx * 0.5 * dt;
+    body->y += body->vy * 0.5 * dt;
+
+    // Kick
+    compute_force(body, node);
+    body->vx += body->ax * dt;
+    body->vy += body->ay * dt;
+
+    // Drift
+    body->x += body->vx * 0.5 * dt;
+    body->y += body->vy * 0.5 * dt;
+}
+
+// The compute_force function should be defined to compute the gravitational force
+void compute_force(Body *body, QuadtreeNode *node)
+{
+    // Implement the force computation logic here
+    if (node->body != NULL && node->body != body)
+    {
+        // Calculate force from a single body
+        double dx = node->body->x - body->x;
+        double dy = node->body->y - body->y;
+        double distance = sqrt(dx * dx + dy * dy);
+        if (distance > 0)
+        {
+            double force = G * body->mass * node->body->mass / (distance * distance);
+            body->ax += force * dx / (distance * body->mass);
+            body->ay += force * dy / (distance * body->mass);
+        }
+    }
+    else if (node->body == NULL)
+    {
+        // Calculate force from center of mass
+        double dx = node->center_of_mass_x - body->x;
+        double dy = node->center_of_mass_y - body->y;
+        double distance = sqrt(dx * dx + dy * dy);
+        double size = node->boundary.w;
+        if (size / distance < THETA)
+        {
+            double force = G * body->mass * node->mass / (distance * distance);
+            body->ax += force * dx / (distance * body->mass);
+            body->ay += force * dy / (distance * body->mass);
+        }
+        else
+        {
+            // Recursively compute forces from child nodes
+            for (int i = 0; i < 4; i++)
+            {
+                if (node->children[i] != NULL)
+                {
+                    compute_force(body, node->children[i]);
+                }
+            }
+        }
+    }
+}
+
+int main()
+{
+    // Initialize a body and a quadtree node for testing
+    Body body = {0, 0, 1, 1, 0.5, 0, 0};
+    Rect boundary = {-10, -10, 20, 20};
+    QuadtreeNode *node = create_node(boundary); // Assume create_node is defined
+
+    double dt = 0.1;
+    update_per_body(&body, node, dt);
+
+    // Free resources, if necessary
+    free_tree(node); // Assume free_tree is defined
+
+    return 0;
+}
+
+// Ensure other required functions like create_node, free_tree, etc., are also implemented
+
+QuadtreeNode *create_node(Rect boundary)
+{
+    QuadtreeNode *node = (QuadtreeNode *)malloc(sizeof(QuadtreeNode));
+    node->body = NULL;
+    node->boundary = boundary;
+    node->mass = 0;
+    node->center_of_mass_x = 0;
+    node->center_of_mass_y = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        node->children[i] = NULL;
+    }
+    return node;
+}
+
+void free_tree(QuadtreeNode *node)
+{
+    if (node != NULL)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (node->children[i] != NULL)
+            {
+                free_tree(node->children[i]);
+            }
+        }
+        free(node);
+    }
+}
