@@ -1,8 +1,7 @@
 import math
+import numpy as np
 import matplotlib.pyplot as plt
-t = 0.0
-dt = 1e-1
-end_time = 1.0
+import matplotlib.animation as animation
 
 class Body:
     def __init__(self, x, y, mass):
@@ -10,7 +9,7 @@ class Body:
         self.y = y
         self.mass = mass
         self.vx = 1
-        self.vy = 1
+        self.vy = 0.5
         self.ax = 0
         self.ay = 0
 
@@ -123,7 +122,7 @@ class QuadtreeNode:
         if self.body != None and self.body != "empty":
             ax.plot([self.body.x],[self.body.y],"bo", ms=5)
 
-def compute_force(body, node, theta=0.5, G=6.67430e-11):
+def compute_force(body, node, theta=0.5, G=1):
     if node.body != "empty":
         if node.body is not None and node.body != body:
             dx = node.body.x - body.x
@@ -131,8 +130,8 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
             distance = math.sqrt(dx**2 + dy**2)
             if distance > 0:
                 force = G * body.mass * node.body.mass / (distance**2)
-                body.ax += force * dx / distance
-                body.ay += force * dy / distance
+                body.ax += force * dx / (distance*body.mass)
+                body.ay += force * dy / (distance*body.mass)
     else:
         dx = node.center_of_mass_x - body.x
         dy = node.center_of_mass_y - body.y
@@ -140,12 +139,12 @@ def compute_force(body, node, theta=0.5, G=6.67430e-11):
         size = node.boundary.w
         if size / distance < theta:
             force = G * body.mass * node.mass / (distance**2)
-            body.ax += force * dx / distance
-            body.ay += force * dy / distance
+            body.ax += force * dx / (distance*body.mass)
+            body.ay += force * dy / (distance*body.mass)
         else:
             for area_ in node.area:
                 compute_force(body, area_, theta, G)
-def update(body, node):
+def update_per_body(body, node):
     ##### update orbit (DKD) ######
     # drift
     body.x = body.x + body.vx*0.5*dt
@@ -161,24 +160,42 @@ def update(body, node):
     body.y = body.y + body.vy*0.5*dt
     return body
 
-print('complete movement')
+def update_per_dt(frame):
+    ax.clear()
+    ax.set_xlim([-100,100])
+    ax.set_ylim([-100,100])
+    x_list = []
+    y_list = []
+    for body in body_list:
+        qt.insert(body)
+    qt._update_mass_distribution()
+    for i in range(len(body_list)):
+        body_list[i] = update_per_body(body_list[i], qt)
+        x_list.append(body_list[i].x)
+        y_list.append(body_list[i].y)
+    print(body_list[1].x)
+    ax.plot(x_list, y_list, "bo", ms=5)
     
-
+def init():
+    x_list = []
+    y_list = []
+    for body in body_list:
+        x_list.append(body.x)
+        y_list.append(body.y)
+    ax.plot(x_list, y_list, "bo", ms=5)
 
 if __name__ == "__main__":
+    t = 0.0
+    dt = 1e-1
+    end_time = 1.0
     body_list = [Body(-0.9,0.9,1),Body(-1,-1,1),Body(1,1,1),Body(1,-1,1),Body(-0.8,0.5,1),Body(-0.5,0.8,1),
                  Body(-0.4,0.7,1),Body(-1.5,0.5,1),Body(-1.5,0.3,1)]
-    while t <= end_time:
-        qt = QuadtreeNode(rect(-2,-2,4,4),0)
-        for body in body_list:
-            qt.insert(body)
-        qt._update_mass_distribution()
-        for i in range(len(body_list)):
-            body_list[i] = update(body_list[i], qt)
-        print(body_list[1].x)
-        fig, ax = plt.subplots()
-        qt.plot(ax)
-
-        t = t + dt
+#    body_list = [Body(-5.0,3.0,1),Body(7.3,-4.0,1),Body(-7.9,-2.6,1),Body(1,-1,1),Body(-0.8,0.5,1),Body(-0.5,0.8,1),
+#                 Body(-0.4,0.7,1),Body(-1.5,0.5,1),Body(-1.5,0.3,10)]
+    fig, ax = plt.subplots()
+    qt = QuadtreeNode(rect(-10,-10,20,20),0)
+    nframe = int( np.ceil( end_time/dt ) )
+    anim   = animation.FuncAnimation( fig, func=update_per_dt, init_func=init,
+                                  frames=nframe, interval=10, repeat=False )
 
     plt.show()
