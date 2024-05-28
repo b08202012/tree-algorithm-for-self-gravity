@@ -161,7 +161,7 @@ def update(body, node):
     body.y = body.y + body.vy*0.5*dt
     return body
 
-
+print('complete movement')
     
 
 
