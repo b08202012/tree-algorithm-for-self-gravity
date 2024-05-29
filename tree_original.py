@@ -123,7 +123,7 @@ class QuadtreeNode:
         if self.body != None and self.body != "empty":
             ax.plot([self.body.x],[self.body.y],"bo", ms=5)
 
-def compute_force(body, node, theta=0.5, G=1):
+def compute_force(body, node, theta=0.5, G=1e-1):
     if node.body != "empty":
         if node.body is not None and node.body != body:
             dx = node.body.x - body.x
@@ -161,12 +161,30 @@ def update_per_body(body, node):
     body.y = body.y + body.vy*0.5*dt
     return body
 
+def find_boundary(body_list):
+    x_list = []
+    y_list = []
+    for body in body_list:
+        x_list.append(body.x)
+        y_list.append(body.y)
+    x_max = max(x_list)
+    x_min = min(x_list)
+    y_max = max(y_list)
+    y_min = min(y_list)
+    if abs(x_max) < abs(x_min):
+        x_max = abs(x_min)
+    if abs(y_max) < abs(y_min):
+        y_max = abs(y_min)
+    return x_max, y_max
+
 def update_per_dt(frame):
     ax.clear()
     ax.set_xlim([-100,100])
     ax.set_ylim([-100,100])
     x_list = []
     y_list = []
+    x_max, y_max = find_boundary(body_list)
+    qt = QuadtreeNode(rect(-x_max,-y_max,2*x_max,2*y_max),0)
     for body in body_list:
         qt.insert(body)
     qt._update_mass_distribution()
@@ -174,7 +192,9 @@ def update_per_dt(frame):
         body_list[i] = update_per_body(body_list[i], qt)
         x_list.append(body_list[i].x)
         y_list.append(body_list[i].y)
-    print(body_list[1].x)
+    x_max = max(x_list)
+    y_max = max(y_list) 
+    #print(body_list[1].x)
     ax.plot(x_list, y_list, "bo", ms=5)
     
 def init():
@@ -188,11 +208,11 @@ def init():
 if __name__ == "__main__":
     t = 0.0
     dt = 1e-1
-    end_time = 1.0
+    end_time = 5.0
     n = 100
     body_list = []
-    pos = np.linspace(-10, 10, 200)
-    vel = np.linspace(-2, 2, 40)
+    pos = np.linspace(-50, 50, 200)
+    vel = np.linspace(-1, 1, 40)
 #    body_list = [Body(-0.9,0.9,1),Body(-1,-1,1),Body(1,1,1),Body(1,-1,1),Body(-0.8,0.5,1),Body(-0.5,0.8,1),
 #                 Body(-0.4,0.7,1),Body(-1.5,0.5,1),Body(-1.5,0.3,1)]
     for i in range(n):
@@ -202,7 +222,6 @@ if __name__ == "__main__":
         vy_ini = np.random.choice(vel, 1)[0]
         body_list.append(Body(x_ini, y_ini, 1, vx_ini, vy_ini))
     fig, ax = plt.subplots()
-    qt = QuadtreeNode(rect(-100,-100,200,200),0)
     nframe = int( np.ceil( end_time/dt ) )
     anim   = animation.FuncAnimation( fig, func=update_per_dt, init_func=init,
                                   frames=nframe, interval=10, repeat=False )
