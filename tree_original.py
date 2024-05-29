@@ -2,14 +2,15 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import random
 
 class Body:
-    def __init__(self, x, y, mass):
+    def __init__(self, x, y, mass, vx, vy):
         self.x = x
         self.y = y
         self.mass = mass
-        self.vx = 1
-        self.vy = 0.5
+        self.vx = vx
+        self.vy = vy
         self.ax = 0
         self.ay = 0
 
@@ -188,12 +189,20 @@ if __name__ == "__main__":
     t = 0.0
     dt = 1e-1
     end_time = 1.0
-    body_list = [Body(-0.9,0.9,1),Body(-1,-1,1),Body(1,1,1),Body(1,-1,1),Body(-0.8,0.5,1),Body(-0.5,0.8,1),
-                 Body(-0.4,0.7,1),Body(-1.5,0.5,1),Body(-1.5,0.3,1)]
-#    body_list = [Body(-5.0,3.0,1),Body(7.3,-4.0,1),Body(-7.9,-2.6,1),Body(1,-1,1),Body(-0.8,0.5,1),Body(-0.5,0.8,1),
-#                 Body(-0.4,0.7,1),Body(-1.5,0.5,1),Body(-1.5,0.3,10)]
+    n = 100
+    body_list = []
+    pos = np.linspace(-10, 10, 200)
+    vel = np.linspace(-2, 2, 40)
+#    body_list = [Body(-0.9,0.9,1),Body(-1,-1,1),Body(1,1,1),Body(1,-1,1),Body(-0.8,0.5,1),Body(-0.5,0.8,1),
+#                 Body(-0.4,0.7,1),Body(-1.5,0.5,1),Body(-1.5,0.3,1)]
+    for i in range(n):
+        x_ini = np.random.choice(pos, 1)[0]
+        y_ini = np.random.choice(pos, 1)[0]
+        vx_ini = np.random.choice(vel, 1)[0]
+        vy_ini = np.random.choice(vel, 1)[0]
+        body_list.append(Body(x_ini, y_ini, 1, vx_ini, vy_ini))
     fig, ax = plt.subplots()
-    qt = QuadtreeNode(rect(-10,-10,20,20),0)
+    qt = QuadtreeNode(rect(-100,-100,200,200),0)
     nframe = int( np.ceil( end_time/dt ) )
     anim   = animation.FuncAnimation( fig, func=update_per_dt, init_func=init,
                                   frames=nframe, interval=10, repeat=False )
