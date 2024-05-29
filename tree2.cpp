@@ -8,7 +8,7 @@
 
 const double G = 6.67430e-11; // Gravitational constant
 const double TIME_STEP = 0.01; // Time step for simulation
-const int NUM_STEPS = 1000; // Number of simulation steps
+const int NUM_STEPS = 100; // Number of simulation steps
 
 class Body {
 public:
@@ -17,11 +17,13 @@ public:
     Body(double x, double y, double mass, double vx, double vy, double ax, double ay)
         : x(x), y(y), mass(mass), vx(vx), vy(vy), ax(ax), ay(ay) {}
 
-    void updatePosition(double dt) {
+    void updatePosition(double dt) { //DKD
+        x += vx * 0.5 * dt;
+        y += vy * 0.5 * dt;
         vx += ax * dt;
         vy += ay * dt;
-        x += vx * dt;
-        y += vy * dt;
+        x += vx * 0.5 * dt;
+        y += vy * 0.5 * dt;
     }
 
     void resetAcceleration() {
@@ -64,7 +66,7 @@ public:
     }
 
     void insert(Body* body) {
-        if (!contains(body)) {
+        if (!inside_node(body)) {
             return;
         }
 
@@ -85,14 +87,14 @@ public:
 
     void insertIntoChildren(Body* body) {
         for (int i = 0; i < 4; ++i) {
-            if (children[i]->contains(body)) {
+            if (children[i]->inside_node(body)) {
                 children[i]->insert(body);
                 break;
             }
         }
     }
 
-    bool contains(Body* body) const {
+    bool inside_node(Body* body) const {
         return (body->x >= x_min && body->x < x_max && body->y >= y_min && body->y < y_max);
     }
 
@@ -200,27 +202,28 @@ void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstr
         }
 
         // Write positions to file
-        outFile << std::scientific << std::setprecision(16);
+        outFile << std::scientific << std::setprecision(8);
         for (auto body : bodies) {
-            outFile << std::setw(24) << body->mass
-                    << std::setw(24) << body->x
-                    << std::setw(24) << body->y
-                    << std::setw(24) << 0.0 // z position (always 0 in 2D)
-                    << std::setw(24) << body->vx
-                    << std::setw(24) << body->vy
-                    << std::setw(24) << 0.0 // z velocity (always 0 in 2D)
-                    << std::setw(24) << 1.0 // Particle type (constant)
-                    << std::setw(24) << body->ax
-                    << std::setw(24) << body->ay
-                    << std::setw(24) << 0.0 // z acceleration (always 0 in 2D)
-                    << std::setw(24) << (step * timeStep) << std::endl;
+            outFile << std::setw(16) << body->mass
+                    << std::setw(16) << body->x
+                    << std::setw(16) << body->y
+                    << std::setw(16) << 0.0 // z position (always 0 in 2D)
+                    << std::setw(16) << body->vx
+                    << std::setw(16) << body->vy
+                    << std::setw(16) << 0.0 // z velocity (always 0 in 2D)
+                    << std::setw(16) << 1.0 // Particle type (constant)
+                    << std::setw(16) << body->ax
+                    << std::setw(16) << body->ay
+                    << std::setw(16) << 0.0 // z acceleration (always 0 in 2D)
+                    << std::setw(16) << (step * timeStep) << std::endl;
         }
 
         delete root;
     }
 }
 
-std::vector<Body*> readParticlesFromFile(const std::string& filename) {
+// Function to read the file and store it in a 2D array
+std::vector<Body*> readFile(const std::string& filename) {
     std::ifstream inFile(filename);
     if (!inFile) {
         throw std::runtime_error("Unable to open file: " + filename);
@@ -228,7 +231,7 @@ std::vector<Body*> readParticlesFromFile(const std::string& filename) {
     std::vector<Body*> bodies;
     std::string line;
     while (std::getline(inFile, line)) {
-        if (line.empty()) continue;
+        if (line.empty() || line[0] == '#') continue;
         std::istringstream iss(line);
         double mass, x, y, z, vx, vy, vz, type, ax, ay, az, time;
         iss >> mass >> x >> y >> z >> vx >> vy >> vz >> type >> ax >> ay >> az >> time;
@@ -245,7 +248,7 @@ int main() {
         }
 
         // Read bodies from file
-        std::vector<Body*> bodies = readParticlesFromFile("IC_16.txt");
+        std::vector<Body*> bodies = readFile("IC_16.txt");
 
         // Simulate
         simulate(bodies, TIME_STEP, NUM_STEPS, outFile);
