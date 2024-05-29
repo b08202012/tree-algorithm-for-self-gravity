@@ -8,7 +8,7 @@
 
 const double G = 6.67430e-11; // Gravitational constant
 const double TIME_STEP = 0.1; // Time step for simulation
-const int NUM_STEPS = 2; // Number of simulation steps
+const int NUM_STEPS = 100; // Number of simulation steps
 
 class Body {
 public:
@@ -202,7 +202,7 @@ void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstr
         }
 
         if(std::remainder(step,10) == 1){
-                outFile << std::scientific << std::setprecision(8);
+        outFile << std::scientific << std::setprecision(8);
         for (auto body : bodies) {
             outFile << body->mass << "  "
                     << body->x << "  "
@@ -242,17 +242,13 @@ std::vector<Body*> readFile(const std::string& filename) {
 }
 
 int main() {
-    try {
         std::ofstream outFile("output.txt");
         if (!outFile) {
             throw std::runtime_error("Unable to open output file");
         }
 
         // Read bodies from file
-        std::vector<Body*> bodies = readFile("IC_16.txt");
-
-         double var = bodies[2]->x;
-         std::cout << var << std::endl;
+        std::vector<Body*> bodies = readFile("IC16.txt");
 
         // Simulate
         simulate(bodies, TIME_STEP, NUM_STEPS, outFile);
@@ -261,12 +257,6 @@ int main() {
         for (auto body : bodies) {
             delete body;
         }
-
         outFile.close();
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
-
     return 0;
 }
