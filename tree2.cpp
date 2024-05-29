@@ -47,24 +47,6 @@ public:
         }
     }
 
-    bool isLeaf() const {
-        for (int i = 0; i < 4; ++i) {
-            if (children[i] != nullptr) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    void subdivide() {
-        double x_mid = (x_min + x_max) / 2;
-        double y_mid = (y_min + y_max) / 2;
-        children[0] = new QuadtreeNode(x_min, x_mid, y_min, y_mid);
-        children[1] = new QuadtreeNode(x_mid, x_max, y_min, y_mid);
-        children[2] = new QuadtreeNode(x_min, x_mid, y_mid, y_max);
-        children[3] = new QuadtreeNode(x_mid, x_max, y_mid, y_max);
-    }
-
     void insert(Body* body) {
         if (!inside_node(body)) {
             return;
@@ -85,6 +67,28 @@ public:
         updateMassDistribution();
     }
 
+    bool inside_node(Body* body) const {
+        return (body->x >= x_min && body->x < x_max && body->y >= y_min && body->y < y_max);
+    }
+
+    bool isLeaf() const {
+        for (int i = 0; i < 4; ++i) {
+            if (children[i] != nullptr) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void subdivide() {
+        double x_mid = (x_min + x_max) / 2;
+        double y_mid = (y_min + y_max) / 2;
+        children[0] = new QuadtreeNode(x_min, x_mid, y_min, y_mid);
+        children[1] = new QuadtreeNode(x_mid, x_max, y_min, y_mid);
+        children[2] = new QuadtreeNode(x_min, x_mid, y_mid, y_max);
+        children[3] = new QuadtreeNode(x_mid, x_max, y_mid, y_max);
+    }
+
     void insertIntoChildren(Body* body) {
         for (int i = 0; i < 4; ++i) {
             if (children[i]->inside_node(body)) {
@@ -92,10 +96,6 @@ public:
                 break;
             }
         }
-    }
-
-    bool inside_node(Body* body) const {
-        return (body->x >= x_min && body->x < x_max && body->y >= y_min && body->y < y_max);
     }
 
     void updateMassDistribution() {
@@ -148,9 +148,9 @@ void computeForce(Body* body, QuadtreeNode* node, double theta = 0.5) {
         double distance = std::sqrt(dx * dx + dy * dy);
         double size = node->x_max - node->x_min;
         if (size / distance < theta) {
-            double force = G * body->mass * node->mass / (distance * distance);
-            body->ax += force * dx / distance;
-            body->ay += force * dy / distance;
+            double accel = G * node->mass / (distance * distance);
+            body->ax += accel * dx / distance;
+            body->ay += accel * dy / distance;
         } else {
             for (int i = 0; i < 4; ++i) {
                 if (node->children[i] != nullptr) {
@@ -161,7 +161,7 @@ void computeForce(Body* body, QuadtreeNode* node, double theta = 0.5) {
     }
 }
 
-void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstream& outFile) {
+void simulate(std::vector<Body*>& bodies, double timeStep, int steps) {
     for (int step = 0; step < steps; ++step) {
         // Calculate the bounds dynamically
         double minCoordX = -1e100;
@@ -201,25 +201,27 @@ void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstr
             body->updatePosition(timeStep);
         }
 
-        // Write positions to file
-        outFile << std::scientific << std::setprecision(8);
-        for (auto body : bodies) {
-            outFile << std::setw(16) << body->mass
-                    << std::setw(16) << body->x
-                    << std::setw(16) << body->y
-                    << std::setw(16) << 0.0 // z position (always 0 in 2D)
-                    << std::setw(16) << body->vx
-                    << std::setw(16) << body->vy
-                    << std::setw(16) << 0.0 // z velocity (always 0 in 2D)
-                    << std::setw(16) << 1.0 // Particle type (constant)
-                    << std::setw(16) << body->ax
-                    << std::setw(16) << body->ay
-                    << std::setw(16) << 0.0 // z acceleration (always 0 in 2D)
-                    << std::setw(16) << (step * timeStep) << std::endl;
-        }
-
         delete root;
     }
+}
+
+void outputfile (std::ofstream& outFile){
+        // Write positions to file
+    outFile << std::scientific << std::setprecision(16);
+        for (auto body : bodies) {
+            outFile << body->mass << " "
+                    << body->x << " "
+                    << body->y << " "
+                    << 0.0 << " " // z position (always 0 in 2D)
+                    << body->vx << " "
+                    << body->vy << " "
+                    << 0.0 << " " // z velocity (always 0 in 2D)
+                    << 1.0 << " " // Particle type (constant)
+                    << body->ax << " "
+                    << body->ay << " "
+                    << 0.0 << " " // z acceleration (always 0 in 2D)
+                    << (step * timeStep) << std::endl;
+                    }
 }
 
 // Function to read the file and store it in a 2D array
