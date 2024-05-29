@@ -7,15 +7,15 @@
 #include <stdexcept>
 
 const double G = 6.67430e-11; // Gravitational constant
-const double TIME_STEP = 0.01; // Time step for simulation
-const int NUM_STEPS = 100; // Number of simulation steps
+const double TIME_STEP = 0.1; // Time step for simulation
+const int NUM_STEPS = 2; // Number of simulation steps
 
 class Body {
 public:
-    double x, y, mass, vx, vy, ax, ay;
+    double mass, x, y, vx, vy, ax, ay;
 
-    Body(double x, double y, double mass, double vx, double vy, double ax, double ay)
-        : x(x), y(y), mass(mass), vx(vx), vy(vy), ax(ax), ay(ay) {}
+    Body(double mass, double x, double y, double vx, double vy, double ax, double ay)
+        : mass(mass), x(x), y(y), vx(vx), vy(vy), ax(ax), ay(ay) {}
 
     void updatePosition(double dt) { //DKD
         x += vx * 0.5 * dt;
@@ -161,7 +161,7 @@ void computeForce(Body* body, QuadtreeNode* node, double theta = 0.5) {
     }
 }
 
-void simulate(std::vector<Body*>& bodies, double timeStep, int steps) {
+void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstream& outFile) {
     for (int step = 0; step < steps; ++step) {
         // Calculate the bounds dynamically
         double minCoordX = -1e100;
@@ -201,27 +201,26 @@ void simulate(std::vector<Body*>& bodies, double timeStep, int steps) {
             body->updatePosition(timeStep);
         }
 
-        delete root;
-    }
-}
-
-void outputfile (std::ofstream& outFile){
-        // Write positions to file
-    outFile << std::scientific << std::setprecision(16);
+        if(std::remainder(step,10) == 1){
+                outFile << std::scientific << std::setprecision(8);
         for (auto body : bodies) {
-            outFile << body->mass << " "
-                    << body->x << " "
-                    << body->y << " "
-                    << 0.0 << " " // z position (always 0 in 2D)
-                    << body->vx << " "
-                    << body->vy << " "
-                    << 0.0 << " " // z velocity (always 0 in 2D)
-                    << 1.0 << " " // Particle type (constant)
-                    << body->ax << " "
-                    << body->ay << " "
-                    << 0.0 << " " // z acceleration (always 0 in 2D)
+            outFile << body->mass << "  "
+                    << body->x << "  "
+                    << body->y << "  "
+                    << 0.0 << "  " // z position (always 0 in 2D)
+                    << body->vx << "  "
+                    << body->vy << "  "
+                    << 0.0 << "  " // z velocity (always 0 in 2D)
+                    << 1.0 << "  " // Particle type (constant)
+                    << body->ax << "  "
+                    << body->ay << "  "
+                    << 0.0 << "  " // z acceleration (always 0 in 2D)
                     << (step * timeStep) << std::endl;
                     }
+        }
+
+        delete root;
+    }
 }
 
 // Function to read the file and store it in a 2D array
@@ -237,7 +236,7 @@ std::vector<Body*> readFile(const std::string& filename) {
         std::istringstream iss(line);
         double mass, x, y, z, vx, vy, vz, type, ax, ay, az, time;
         iss >> mass >> x >> y >> z >> vx >> vy >> vz >> type >> ax >> ay >> az >> time;
-        bodies.push_back(new Body(x, y, mass, vx, vy, ax, ay));
+        bodies.push_back(new Body(mass, x, y, vx, vy, ax, ay));
     }
     return bodies;
 }
@@ -251,6 +250,9 @@ int main() {
 
         // Read bodies from file
         std::vector<Body*> bodies = readFile("IC_16.txt");
+
+         double var = bodies[2]->x;
+         std::cout << var << std::endl;
 
         // Simulate
         simulate(bodies, TIME_STEP, NUM_STEPS, outFile);
