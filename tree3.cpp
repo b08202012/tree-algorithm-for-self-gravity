@@ -17,17 +17,29 @@ public:
     Body(double mass, double x, double y, double z, double vx, double vy, double vz, double ax, double ay, double az)
         : mass(mass), x(x), y(y), z(z), vx(vx), vy(vy), vz(vz), ax(ax), ay(ay), az(az) {}
 
-    void updatePosition(double dt) { //DKD
-        x += vx * 0.5 * dt;
-        y += vy * 0.5 * dt;
-        z += vz * 0.5 * dt;
-        vx += ax * dt;
-        vy += ay * dt;
-        vz += az * dt;
+    void updatePosition(double dt) { 
         x += vx * 0.5 * dt;
         y += vy * 0.5 * dt;
         z += vz * 0.5 * dt;
     }
+
+    void updateHalfPosition(double dt) { 
+        x += vx * 0.5 * dt;
+        y += vy * 0.5 * dt;
+        z += vz * 0.5 * dt;
+    }
+
+    void updateVelo(double dt) { //Kick
+        vx += ax * dt;
+        vy += ay * dt;
+        vz += az * dt;
+    }
+
+    void updateHalfVelo(double dt) { //Kick
+        vx += ax * 0.5 * dt;
+        vy += ay * 0.5 * dt;
+        vz += az * 0.5 * dt;
+    }    
 
     void resetAcceleration() {
         ax = 0;
@@ -201,15 +213,23 @@ void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstr
             root->insert(body);
         }
 
+        for (auto body : bodies) {
+            body->updateHalfPosition(timeStep);
+        }
+
         // Compute forces for each body
         for (auto body : bodies) {
             body->resetAcceleration();
             computeForce(body, root);
         }
 
+        for (auto body : bodies) {
+            body->updateVelo(timeStep);
+        }
+
         // Update positions and velocities
         for (auto body : bodies) {
-            body->updatePosition(timeStep);
+            body->updateHalfPosition(timeStep);
         }
 
         if(std::remainder(step,10) == 0){
