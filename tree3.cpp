@@ -246,7 +246,7 @@ std::vector<Body*> readFile(const std::string& filename) {
         std::istringstream iss(line);
         double mass, x, y, z, vx, vy, vz, type, ax, ay, az, time;
         iss >> mass >> x >> y >> z >> vx >> vy >> vz >> type >> ax >> ay >> az >> time;
-        bodies.push_back(new Body(mass, x, y, vx, vy, ax, ay));
+        bodies.push_back(new Body(mass, x, y, z, vx, vy, vz,  ax, ay, az));
     }
     return bodies;
 }
