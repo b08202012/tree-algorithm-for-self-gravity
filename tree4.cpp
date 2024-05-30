@@ -9,9 +9,13 @@
 #include <cstdlib>
 #include <omp.h>
 
-const double G = 1.0; // Gravitational constant
-const double TIME_STEP = 0.01; // Time step for simulation
-const int NUM_STEPS = 1000; // Number of simulation steps
+const double G = 1.0;
+const double TIME_STEP = 0.01; 
+const int NUM_STEPS = 1000; 
+const int NUM_PARTICLE = 100;
+const int NUM_THREADS = 32;
+std::string init_flie = "IC" + std::to_string(NUM_PARTICLE) + ".txt";
+std::string output_flie = "output" + std::to_string(NUM_PARTICLE) + ".txt";
 
 class Body {
 public:
@@ -163,7 +167,7 @@ public:
     }
 };
 
-void computeForce(Body* body, OctreeNode* node, double theta = 0.05) {
+void computeForce(Body* body, OctreeNode* node, double theta = 0.5) {
     if (node->isLeaf()) {
         if (node->body != nullptr && node->body != body) {
             double dx = node->body->x - body->x;
@@ -219,15 +223,16 @@ void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstr
         for (auto body : bodies) {
             body->updateHalfPosition(timeStep);
         }
+        omp_set_num_threads( NUM_THREADS );
         #  pragma omp parallel
-        omp_set_num_threads( 32 );
-        #  pragma omp for
-        // Compute forces for each body
-        for (auto body : bodies) {
-            body->resetAcceleration();
-            computeForce(body, root);
+        {
+            #  pragma omp for
+            // Compute forces for each body
+            for (auto body : bodies) {
+                body->resetAcceleration();
+                computeForce(body, root);
+            }
         }
-
         for (auto body : bodies) {
             body->updateVelo(timeStep);
         }
@@ -277,13 +282,13 @@ std::vector<Body*> readFile(const std::string& filename) {
 }
 
 int main() {
-        std::ofstream outFile("output1000.txt");
+        std::ofstream outFile(output_flie);
         if (!outFile) {
             throw std::runtime_error("Unable to open output file");
         }
 
         // Read bodies from file
-        std::vector<Body*> bodies = readFile("IC1000.txt");
+        std::vector<Body*> bodies = readFile(init_flie);
 
         // Simulate
         simulate(bodies, TIME_STEP, NUM_STEPS, outFile);
