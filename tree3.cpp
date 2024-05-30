@@ -7,8 +7,8 @@
 #include <stdexcept>
 
 const double G = 1.0; // Gravitational constant
-const double TIME_STEP = 0.1; // Time step for simulation
-const int NUM_STEPS = 10000; // Number of simulation steps
+const double TIME_STEP = 0.01; // Time step for simulation
+const int NUM_STEPS = 1000; // Number of simulation steps
 
 class Body {
 public:
@@ -148,7 +148,7 @@ public:
     }
 };
 
-void computeForce(Body* body, OctreeNode* node, double theta = 0.5) {
+void computeForce(Body* body, OctreeNode* node, double theta = 0.05) {
     if (node->isLeaf()) {
         if (node->body != nullptr && node->body != body) {
             double dx = node->body->x - body->x;
@@ -159,7 +159,7 @@ void computeForce(Body* body, OctreeNode* node, double theta = 0.5) {
                 double accel = G * node->body->mass / (distance * distance);
                 body->ax += accel * dx / distance;
                 body->ay += accel * dy / distance;
-                body->ay += accel * dz / distance;
+                body->az += accel * dz / distance;
             }
         }
     } else {
@@ -172,7 +172,7 @@ void computeForce(Body* body, OctreeNode* node, double theta = 0.5) {
             double accel = G * node->mass / (distance * distance);
             body->ax += accel * dx / distance;
             body->ay += accel * dy / distance;
-            body->ay += accel * dz / distance;
+            body->az += accel * dz / distance;
         } else {
             for (int i = 0; i < 8; ++i) {
                 if (node->children[i] != nullptr) {
@@ -212,19 +212,19 @@ void simulate(std::vector<Body*>& bodies, double timeStep, int steps, std::ofstr
             body->updatePosition(timeStep);
         }
 
-        if(std::remainder(step,1000) == 0){
+        if(std::remainder(step,10) == 0){
         outFile << std::scientific << std::setprecision(8);
         for (auto body : bodies) {
-            outFile << body->mass << " "
-                    << body->x << " "
-                    << body->y << " "
-                    << body->z << " "
-                    << body->vx << " "
-                    << body->vy << " "
-                    << body->vz << " "
-                    << body->ax << " "
-                    << body->ay << " "
-                    << body->az << " "
+            outFile << body->mass << "  "
+                    << body->x << "  "
+                    << body->y << "  "
+                    << body->z << "  "
+                    << body->vx << "  "
+                    << body->vy << "  "
+                    << body->vz << "  "
+                    << body->ax << "  "
+                    << body->ay << "  "
+                    << body->az << "  "
                     << (step * timeStep) << std::endl;
             }
         }
@@ -252,13 +252,13 @@ std::vector<Body*> readFile(const std::string& filename) {
 }
 
 int main() {
-        std::ofstream outFile("output100.txt");
+        std::ofstream outFile("output1000.txt");
         if (!outFile) {
             throw std::runtime_error("Unable to open output file");
         }
 
         // Read bodies from file
-        std::vector<Body*> bodies = readFile("IC100.txt");
+        std::vector<Body*> bodies = readFile("IC1000.txt");
 
         // Simulate
         simulate(bodies, TIME_STEP, NUM_STEPS, outFile);
